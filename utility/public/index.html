@@ -57,14 +57,13 @@
       font-size: 12px;
     }
     #jump-input:focus { outline: 1px solid #e94560; }
-
     #status { color: #4ecb71; font-size: 11px; margin-left: auto; min-width: 100px; text-align: right; }
 
     /* ── Main layout ── */
     #main { display: flex; flex: 1; overflow: hidden; }
 
     #sheet-panel { flex: 0 0 63%; overflow: auto; background: #0a0a0a; }
-    #sheet-canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+    #sheet-canvas { display: block; image-rendering: pixelated; }
 
     #right-panel {
       flex: 1;
@@ -98,8 +97,40 @@
     .coord  { color: #777; }
     .coord b { color: #fff; }
 
-    #sp-warn { color: #f0a500; font-size: 11px; margin-top: 8px; }
+    #sp-warn { color: #f0a500; font-size: 11px; margin-top: 6px; }
     #sp-note { color: #555; font-size: 11px; margin-top: 4px; }
+
+    /* ── Tile tag panel ── */
+    #tag-panel {
+      display: none;
+      margin-top: 10px;
+      border-top: 1px solid #2a2a3e;
+      padding-top: 10px;
+    }
+    #tile-sel-info { color: #888; font-size: 11px; margin-bottom: 4px; }
+    #tag-progress  { color: #555; font-size: 11px; margin-bottom: 8px; }
+    #tag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+
+    .tag-btn {
+      background: #1a1a2e;
+      color: #999;
+      border: 1px solid #2a2a4e;
+      border-left-width: 4px;
+      padding: 4px 7px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 11px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tag-btn:hover { background: #252540; color: #ddd; }
+    .tag-btn.active { background: #1e2840; color: #fff; }
+    .tag-key { color: #e94560; font-weight: bold; min-width: 12px; }
+
+    .clear-btn { grid-column: span 2; border-left-color: #444 !important; color: #555; }
+    .clear-btn:hover { color: #aaa; }
 
     /* ── Help footer ── */
     #help {
@@ -153,23 +184,44 @@
       </div>
       <div id="sp-warn"></div>
       <div id="sp-note"></div>
+
+      <!-- Tile tagging panel (env blocks only) -->
+      <div id="tag-panel">
+        <div id="tile-sel-info">Click a tile in the sheet to select it</div>
+        <div id="tag-progress"></div>
+        <div id="tag-grid"></div>
+      </div>
     </div>
-    <div id="help">
-      <b>←↑→↓</b> &nbsp;move 1px &nbsp;&nbsp; <b>Shift+arrow</b> &nbsp;move 5px<br>
-      <b>Alt+←→</b> &nbsp;width &nbsp;&nbsp; <b>Alt+↑↓</b> &nbsp;height<br>
-      <b>S</b> &nbsp;save &nbsp;&nbsp; <b>Tab</b> &nbsp;next &nbsp;&nbsp; <b>Shift+Tab</b> &nbsp;prev
-    </div>
+    <div id="help"></div>
   </div>
 </div>
 
 <script>
+// ─── Tag definitions ──────────────────────────────────────────────────────────
+const TAGS = [
+  { id: 'floor',       label: 'Floor',       key: '1', color: 'rgba(74,222,128,0.4)'  },
+  { id: 'wall',        label: 'Wall',         key: '2', color: 'rgba(248,113,113,0.5)' },
+  { id: 'wall-top',    label: 'Wall Top',     key: '3', color: 'rgba(251,146,60,0.45)' },
+  { id: 'corner',      label: 'Corner',       key: '4', color: 'rgba(251,191,36,0.45)' },
+  { id: 'door',        label: 'Door',         key: '5', color: 'rgba(96,165,250,0.45)' },
+  { id: 'decoration',  label: 'Decoration',   key: '6', color: 'rgba(192,132,252,0.4)' },
+  { id: 'obstacle',    label: 'Obstacle',     key: '7', color: 'rgba(107,114,128,0.5)' },
+  { id: 'stairs',      label: 'Stairs',       key: '8', color: 'rgba(244,63,94,0.45)'  },
+];
+const TAG_BY_ID  = Object.fromEntries(TAGS.map(t => [t.id, t]));
+const TAG_BY_KEY = Object.fromEntries(TAGS.map(t => [t.key, t]));
+
+// Solid versions of tag colors for drawing (replace alpha with 0.85)
+function solidColor(rgba) { return rgba.replace(/[\d.]+\)$/, '0.85)'); }
+
 // ─── State ────────────────────────────────────────────────────────────────────
-let map      = null;   // live copy of sprite_map.json (mutated in place)
-let flat     = [];     // flat list of calibration items
-let idx      = 0;      // current sprite index
-let dirty    = false;
-let sheet    = null;   // HTMLImageElement
-let scale    = 1;      // sheet canvas scale factor
+let map          = null;   // live sprite_map.json object (mutated in place)
+let flat         = [];     // flat list of calibration items
+let idx          = 0;      // current item index
+let dirty        = false;
+let sheet        = null;   // HTMLImageElement for the sprite sheet
+let scale        = 1;      // sheet canvas → image pixel scale factor
+let selectedTile = null;   // { blockId, col, row } | null  (env block mode only)
 
 const sheetPanel  = document.getElementById('sheet-panel');
 const sheetCanvas = document.getElementById('sheet-canvas');
@@ -177,131 +229,178 @@ const sheetCtx    = sheetCanvas.getContext('2d');
 const zoomCanvas  = document.getElementById('zoom-canvas');
 const zoomCtx     = zoomCanvas.getContext('2d');
 
+// ─── Build tag buttons (once) ─────────────────────────────────────────────────
+function buildTagButtons() {
+  const grid = document.getElementById('tag-grid');
+  grid.innerHTML = '';
+  for (const tag of TAGS) {
+    const btn = document.createElement('button');
+    btn.className = 'tag-btn';
+    btn.dataset.tagId = tag.id;
+    btn.style.borderLeftColor = solidColor(tag.color);
+    btn.innerHTML = `<span class="tag-key">${tag.key}</span>${tag.label}`;
+    btn.addEventListener('click', () => applyTag(tag.id));
+    grid.appendChild(btn);
+  }
+  const clear = document.createElement('button');
+  clear.className = 'tag-btn clear-btn';
+  clear.innerHTML = '<span class="tag-key">0</span>Clear tag';
+  clear.addEventListener('click', clearTag);
+  grid.appendChild(clear);
+}
+
 // ─── Build flat calibration list ──────────────────────────────────────────────
 function buildFlat(m) {
   const list = [];
   const s = m.sections;
+  const add = item => list.push(item);
 
-  function add(item) { list.push(item); }
-
-  // ── Characters ──
+  // Characters
   const cSz = s.characters.sprite_size;
   for (const sp of s.characters.sprites) {
     add({
-      id:         sp.id,
-      section:    `characters · ${sp.role}`,
+      id: sp.id, section: `characters · ${sp.role}`,
       resizeWarn: '⚠ Resize affects sprite_size shared by ALL characters',
-      getRect:    () => ({ x: sp.x, y: sp.y, w: cSz.w, h: cSz.h }),
-      moveBy:     (dx, dy) => { sp.x += dx; sp.y += dy; },
-      resizeBy:   (dw, dh) => { cSz.w = Math.max(1, cSz.w + dw); cSz.h = Math.max(1, cSz.h + dh); },
+      getRect:  () => ({ x: sp.x, y: sp.y, w: cSz.w, h: cSz.h }),
+      moveBy:   (dx, dy) => { sp.x += dx; sp.y += dy; },
+      resizeBy: (dw, dh) => { cSz.w = Math.max(1, cSz.w+dw); cSz.h = Math.max(1, cSz.h+dh); },
     });
   }
 
-  // ── Bosses ──
+  // Bosses
   const bSz = s.bosses.sprite_size;
   for (const sp of s.bosses.sprites) {
     add({
-      id:         sp.id,
-      section:    'bosses',
+      id: sp.id, section: 'bosses',
       resizeWarn: '⚠ Resize affects sprite_size shared by ALL bosses',
-      getRect:    () => ({ x: sp.x, y: sp.y, w: bSz.w, h: bSz.h }),
-      moveBy:     (dx, dy) => { sp.x += dx; sp.y += dy; },
-      resizeBy:   (dw, dh) => { bSz.w = Math.max(1, bSz.w + dw); bSz.h = Math.max(1, bSz.h + dh); },
+      getRect:  () => ({ x: sp.x, y: sp.y, w: bSz.w, h: bSz.h }),
+      moveBy:   (dx, dy) => { sp.x += dx; sp.y += dy; },
+      resizeBy: (dw, dh) => { bSz.w = Math.max(1, bSz.w+dw); bSz.h = Math.max(1, bSz.h+dh); },
     });
   }
 
-  // ── Environments: one item per block ──
-  // Moving shifts the block anchor → all tiles in the block shift together.
-  // Resizing changes tile_size → all tiles resize together.
+  // Environments — one calibration item per block
   const tSz = s.environments.tile_size;
   for (const block of s.environments.blocks) {
     add({
-      id:         `${block.id}_block`,
-      section:    'environments · block',
-      note:       `${block.cols}×${block.rows} tiles of ${tSz.w}×${tSz.h}px · moving shifts all tiles together`,
+      id: `${block.id}_block`, section: 'environments · block',
+      note: `${block.cols}×${block.rows} tiles · arrows move entire block · click tiles to tag`,
       resizeWarn: '⚠ Resize changes tile_size shared by ALL environment tiles',
-      isEnvBlock: true,
-      blockRef:   block,
-      getRect:    () => ({ x: block.x, y: block.y, w: block.cols * tSz.w, h: block.rows * tSz.h }),
-      moveBy:     (dx, dy) => { block.x += dx; block.y += dy; },
-      resizeBy:   (dw, dh) => { tSz.w = Math.max(1, tSz.w + dw); tSz.h = Math.max(1, tSz.h + dh); },
+      isEnvBlock: true, blockRef: block,
+      getRect:  () => ({ x: block.x, y: block.y, w: block.cols*tSz.w, h: block.rows*tSz.h }),
+      moveBy:   (dx, dy) => { block.x += dx; block.y += dy; },
+      resizeBy: (dw, dh) => { tSz.w = Math.max(1, tSz.w+dw); tSz.h = Math.max(1, tSz.h+dh); },
     });
   }
 
-  // ── Items (individual x+w, shared y+h) ──
+  // Items (individual x+w, shared y+h)
   for (const sp of s.items.sprites) {
     add({
-      id:       sp.id,
-      section:  'items',
-      note:     'Row Y is shared — ↑↓ moves the entire items row',
+      id: sp.id, section: 'items',
+      note: 'Row Y is shared — ↑↓ moves the entire items row',
       getRect:  () => ({ x: sp.x, y: s.items.row_y, w: sp.w, h: s.items.row_height }),
       moveBy:   (dx, dy) => { sp.x += dx; s.items.row_y += dy; },
-      resizeBy: (dw, dh) => { sp.w = Math.max(1, sp.w + dw); s.items.row_height = Math.max(1, s.items.row_height + dh); },
+      resizeBy: (dw, dh) => { sp.w = Math.max(1, sp.w+dw); s.items.row_height = Math.max(1, s.items.row_height+dh); },
     });
   }
 
-  // ── Portraits (individual x, shared y+size) ──
+  // Portraits (individual x, shared y+size)
   const pSz = s.portraits.sprite_size;
   for (const sp of s.portraits.sprites) {
     add({
-      id:         sp.id,
-      section:    `portraits · ${sp.role}`,
-      note:       'Row Y is shared — ↑↓ moves the entire portraits row',
+      id: sp.id, section: `portraits · ${sp.role}`,
+      note: 'Row Y is shared — ↑↓ moves the entire portraits row',
       resizeWarn: '⚠ Resize affects sprite_size shared by ALL portraits',
-      getRect:    () => ({ x: sp.x, y: s.portraits.row_y, w: pSz.w, h: pSz.h }),
-      moveBy:     (dx, dy) => { sp.x += dx; s.portraits.row_y += dy; },
-      resizeBy:   (dw, dh) => { pSz.w = Math.max(1, pSz.w + dw); pSz.h = Math.max(1, pSz.h + dh); },
+      getRect:  () => ({ x: sp.x, y: s.portraits.row_y, w: pSz.w, h: pSz.h }),
+      moveBy:   (dx, dy) => { sp.x += dx; s.portraits.row_y += dy; },
+      resizeBy: (dw, dh) => { pSz.w = Math.max(1, pSz.w+dw); pSz.h = Math.max(1, pSz.h+dh); },
     });
   }
 
-  // ── Interface (individual x+w, shared y+h) ──
+  // Interface (individual x+w, shared y+h)
   for (const sp of s.interface.sprites) {
     const spId = sp.id ?? sp.name;
     add({
-      id:       spId,
-      section:  'interface',
-      note:     'Row Y is shared — ↑↓ moves the entire interface row',
+      id: spId, section: 'interface',
+      note: 'Row Y is shared — ↑↓ moves the entire interface row',
       getRect:  () => ({ x: sp.x, y: s.interface.row_y, w: sp.w, h: s.interface.row_height }),
       moveBy:   (dx, dy) => { sp.x += dx; s.interface.row_y += dy; },
-      resizeBy: (dw, _)  => { sp.w = Math.max(1, sp.w + dw); },
+      resizeBy: (dw)     => { sp.w = Math.max(1, sp.w+dw); },
     });
   }
 
-  // ── Effects (individual x+w, shared y+h) ──
+  // Effects (individual x+w, shared y+h)
   for (const sp of s.effects.sprites) {
     add({
-      id:       sp.id,
-      section:  'effects',
-      note:     'Row Y is shared — ↑↓ moves the entire effects row',
+      id: sp.id, section: 'effects',
+      note: 'Row Y is shared — ↑↓ moves the entire effects row',
       getRect:  () => ({ x: sp.x, y: s.effects.row_y, w: sp.w, h: s.effects.row_height }),
       moveBy:   (dx, dy) => { sp.x += dx; s.effects.row_y += dy; },
-      resizeBy: (dw, _)  => { sp.w = Math.max(1, sp.w + dw); },
+      resizeBy: (dw)     => { sp.w = Math.max(1, sp.w+dw); },
     });
   }
 
-  // ── Fonts (individual x+w, shared y+h) ──
+  // Fonts (individual x+w, shared y+h)
   for (const [letter, glyph] of Object.entries(s.fonts.glyphs)) {
     add({
-      id:         `"${letter}"`,
-      section:    'fonts',
-      note:       'Row Y is shared — ↑↓ moves the entire font row',
+      id: `"${letter}"`, section: 'fonts',
+      note: 'Row Y is shared — ↑↓ moves the entire font row',
       resizeWarn: '⚠ Alt+↑↓ changes row_height shared by ALL glyphs',
-      getRect:    () => ({ x: glyph.x, y: s.fonts.row_y, w: glyph.w, h: s.fonts.row_height }),
-      moveBy:     (dx, dy) => { glyph.x += dx; s.fonts.row_y += dy; },
-      resizeBy:   (dw, dh) => { glyph.w = Math.max(1, glyph.w + dw); s.fonts.row_height = Math.max(1, s.fonts.row_height + dh); },
+      getRect:  () => ({ x: glyph.x, y: s.fonts.row_y, w: glyph.w, h: s.fonts.row_height }),
+      moveBy:   (dx, dy) => { glyph.x += dx; s.fonts.row_y += dy; },
+      resizeBy: (dw, dh) => { glyph.w = Math.max(1, glyph.w+dw); s.fonts.row_height = Math.max(1, s.fonts.row_height+dh); },
     });
   }
 
   return list;
 }
 
+// ─── Tile tag helpers ─────────────────────────────────────────────────────────
+function ensureTileTags() {
+  const env = map.sections.environments;
+  if (!env.tile_tags) env.tile_tags = {};
+  for (const block of env.blocks) {
+    if (!env.tile_tags[block.id]) env.tile_tags[block.id] = {};
+  }
+}
+
+function getTileTag(blockId, col, row) {
+  return map.sections.environments.tile_tags?.[blockId]?.[`${col},${row}`] ?? null;
+}
+
+function applyTag(tagId) {
+  if (!selectedTile) return;
+  const { blockId, col, row } = selectedTile;
+  map.sections.environments.tile_tags[blockId][`${col},${row}`] = tagId;
+  markDirty();
+  render();
+}
+
+function clearTag() {
+  if (!selectedTile) return;
+  const { blockId, col, row } = selectedTile;
+  delete map.sections.environments.tile_tags[blockId][`${col},${row}`];
+  markDirty();
+  render();
+}
+
+function tagStats(blockId, totalTiles) {
+  const tags = map.sections.environments.tile_tags?.[blockId] ?? {};
+  const tagged = Object.keys(tags).length;
+  const counts = {};
+  for (const t of TAGS) counts[t.id] = 0;
+  for (const v of Object.values(tags)) if (counts[v] !== undefined) counts[v]++;
+  return { tagged, total: totalTiles, counts };
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
+  buildTagButtons();
   setStatus('Loading…');
 
-  const [mapRes] = await Promise.all([fetch('/api/sprite-map')]);
-  map  = await mapRes.json();
+  map  = await fetch('/api/sprite-map').then(r => r.json());
   flat = buildFlat(map);
+  ensureTileTags();
 
   sheet = await new Promise((res, rej) => {
     const img = new Image();
@@ -328,6 +427,8 @@ function render() {
   const item = flat[idx];
   const r    = item.getRect();
 
+  const sx = r.x * scale, sy = r.y * scale, sw = r.w * scale, sh = r.h * scale;
+
   // ── Sheet view ──────────────────────────────────────────────────────────────
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
   sheetCtx.drawImage(sheet, 0, 0, sheetCanvas.width, sheetCanvas.height);
@@ -336,79 +437,113 @@ function render() {
   sheetCtx.fillStyle = 'rgba(0,0,0,0.6)';
   sheetCtx.fillRect(0, 0, sheetCanvas.width, sheetCanvas.height);
 
-  // Restore full brightness for the current sprite region
-  const sx = r.x * scale, sy = r.y * scale, sw = r.w * scale, sh = r.h * scale;
+  // Restore full brightness for the current region
   sheetCtx.drawImage(sheet, r.x, r.y, r.w, r.h, sx, sy, sw, sh);
 
-  // Red border
-  sheetCtx.strokeStyle = '#e94560';
-  sheetCtx.lineWidth = 2;
-  sheetCtx.strokeRect(sx - 1, sy - 1, sw + 2, sh + 2);
-
-  // Yellow crosshair corners
-  sheetCtx.strokeStyle = '#FFD700';
-  sheetCtx.lineWidth = 1;
-  const t = 7;
-  for (const [cx, cy] of [[sx, sy], [sx+sw, sy], [sx, sy+sh], [sx+sw, sy+sh]]) {
-    sheetCtx.beginPath();
-    sheetCtx.moveTo(cx - t, cy); sheetCtx.lineTo(cx + t, cy);
-    sheetCtx.moveTo(cx, cy - t); sheetCtx.lineTo(cx, cy + t);
-    sheetCtx.stroke();
-  }
-
-  // Grid overlay for environment blocks
   if (item.isEnvBlock) {
-    const tSz = map.sections.environments.tile_size;
+    const tSz   = map.sections.environments.tile_size;
     const block = item.blockRef;
+
+    // ── Tag color overlays ──
+    for (let row = 0; row < block.rows; row++) {
+      for (let col = 0; col < block.cols; col++) {
+        const tag = getTileTag(block.id, col, row);
+        if (!tag) continue;
+        const tx = (block.x + col * tSz.w) * scale;
+        const ty = (block.y + row * tSz.h) * scale;
+        sheetCtx.fillStyle = TAG_BY_ID[tag]?.color ?? 'rgba(255,255,255,0.2)';
+        sheetCtx.fillRect(tx, ty, tSz.w * scale, tSz.h * scale);
+      }
+    }
+
+    // ── Grid lines ──
     sheetCtx.strokeStyle = 'rgba(255,215,0,0.35)';
     sheetCtx.lineWidth = 1;
     for (let c = 1; c < block.cols; c++) {
       const lx = (block.x + c * tSz.w) * scale;
-      sheetCtx.beginPath();
-      sheetCtx.moveTo(lx, sy); sheetCtx.lineTo(lx, sy + sh);
-      sheetCtx.stroke();
+      sheetCtx.beginPath(); sheetCtx.moveTo(lx, sy); sheetCtx.lineTo(lx, sy+sh); sheetCtx.stroke();
     }
     for (let row = 1; row < block.rows; row++) {
       const ly = (block.y + row * tSz.h) * scale;
-      sheetCtx.beginPath();
-      sheetCtx.moveTo(sx, ly); sheetCtx.lineTo(sx + sw, ly);
-      sheetCtx.stroke();
+      sheetCtx.beginPath(); sheetCtx.moveTo(sx, ly); sheetCtx.lineTo(sx+sw, ly); sheetCtx.stroke();
+    }
+
+    // ── Selected tile highlight ──
+    if (selectedTile && selectedTile.blockId === block.id) {
+      const { col, row } = selectedTile;
+      const tx = (block.x + col * tSz.w) * scale;
+      const ty = (block.y + row * tSz.h) * scale;
+      const tw = tSz.w * scale, th = tSz.h * scale;
+      sheetCtx.strokeStyle = '#00e5ff';
+      sheetCtx.lineWidth = 2;
+      sheetCtx.strokeRect(tx + 1, ty + 1, tw - 2, th - 2);
     }
   }
 
+  // Block / sprite outer border
+  sheetCtx.strokeStyle = '#e94560';
+  sheetCtx.lineWidth = 2;
+  sheetCtx.strokeRect(sx - 1, sy - 1, sw + 2, sh + 2);
+
+  // Corner crosshairs
+  sheetCtx.strokeStyle = '#FFD700';
+  sheetCtx.lineWidth = 1;
+  const t = 7;
+  for (const [cx, cy] of [[sx,sy],[sx+sw,sy],[sx,sy+sh],[sx+sw,sy+sh]]) {
+    sheetCtx.beginPath();
+    sheetCtx.moveTo(cx-t, cy); sheetCtx.lineTo(cx+t, cy);
+    sheetCtx.moveTo(cx, cy-t); sheetCtx.lineTo(cx, cy+t);
+    sheetCtx.stroke();
+  }
+
   // Auto-scroll sheet to keep sprite visible
-  const mid = sy + sh / 2;
-  const target = mid - sheetPanel.clientHeight / 2;
-  sheetPanel.scrollTop = Math.max(0, target);
+  sheetPanel.scrollTop = Math.max(0, sy + sh/2 - sheetPanel.clientHeight/2);
 
   // ── Zoom view ───────────────────────────────────────────────────────────────
   const ZW = 240, ZH = 240;
   zoomCanvas.width = ZW; zoomCanvas.height = ZH;
 
   // Checkerboard background
-  for (let gy = 0; gy < ZH; gy += 8) {
+  for (let gy = 0; gy < ZH; gy += 8)
     for (let gx = 0; gx < ZW; gx += 8) {
-      zoomCtx.fillStyle = ((gx + gy) / 8) % 2 === 0 ? '#1c1c1c' : '#252525';
+      zoomCtx.fillStyle = ((gx+gy)/8) % 2 === 0 ? '#1c1c1c' : '#252525';
       zoomCtx.fillRect(gx, gy, 8, 8);
     }
-  }
 
-  const zScale = Math.min(ZW / r.w, ZH / r.h) * 0.88;
-  const dw = r.w * zScale, dh = r.h * zScale;
-  const dx = (ZW - dw) / 2, dy = (ZH - dh) / 2;
+  // Decide what to show in zoom: selected tile, or full rect
+  let zSrc = { x: r.x, y: r.y, w: r.w, h: r.h };
+  let tileTag = null;
 
-  zoomCtx.imageSmoothingEnabled = false;
-  zoomCtx.drawImage(sheet, r.x, r.y, r.w, r.h, dx, dy, dw, dh);
-
-  zoomCtx.strokeStyle = '#e94560';
-  zoomCtx.lineWidth = 1;
-  zoomCtx.strokeRect(dx, dy, dw, dh);
-
-  // Grid lines in zoom for env blocks
-  if (item.isEnvBlock) {
+  if (item.isEnvBlock && selectedTile && selectedTile.blockId === item.blockRef.id) {
     const tSz = map.sections.environments.tile_size;
     const block = item.blockRef;
+    zSrc = {
+      x: block.x + selectedTile.col * tSz.w,
+      y: block.y + selectedTile.row * tSz.h,
+      w: tSz.w, h: tSz.h,
+    };
+    tileTag = getTileTag(selectedTile.blockId, selectedTile.col, selectedTile.row);
+  }
+
+  const zScale = Math.min(ZW / zSrc.w, ZH / zSrc.h) * 0.88;
+  const dw = zSrc.w * zScale, dh = zSrc.h * zScale;
+  const dx = (ZW - dw) / 2,   dy = (ZH - dh) / 2;
+
+  zoomCtx.imageSmoothingEnabled = false;
+  zoomCtx.drawImage(sheet, zSrc.x, zSrc.y, zSrc.w, zSrc.h, dx, dy, dw, dh);
+
+  // Tag color overlay in zoom
+  if (tileTag && TAG_BY_ID[tileTag]) {
+    zoomCtx.fillStyle = TAG_BY_ID[tileTag].color;
+    zoomCtx.fillRect(dx, dy, dw, dh);
+  }
+
+  // Grid lines in zoom (when showing full block)
+  if (item.isEnvBlock && zSrc.w > map.sections.environments.tile_size.w) {
+    const tSz   = map.sections.environments.tile_size;
+    const block = item.blockRef;
     zoomCtx.strokeStyle = 'rgba(255,215,0,0.5)';
+    zoomCtx.lineWidth = 1;
     for (let c = 1; c < block.cols; c++) {
       const lx = dx + c * tSz.w * zScale;
       zoomCtx.beginPath(); zoomCtx.moveTo(lx, dy); zoomCtx.lineTo(lx, dy+dh); zoomCtx.stroke();
@@ -419,10 +554,25 @@ function render() {
     }
   }
 
-  // Scale label in zoom
+  // Tag label in zoom
+  if (tileTag && TAG_BY_ID[tileTag]) {
+    zoomCtx.font = 'bold 13px monospace';
+    zoomCtx.textAlign = 'center';
+    zoomCtx.fillStyle = 'rgba(0,0,0,0.6)';
+    zoomCtx.fillRect(0, ZH - 22, ZW, 22);
+    zoomCtx.fillStyle = '#fff';
+    zoomCtx.fillText(TAG_BY_ID[tileTag].label, ZW/2, ZH - 6);
+    zoomCtx.textAlign = 'left';
+  }
+
+  // Outer border + size label
+  zoomCtx.strokeStyle = item.isEnvBlock && selectedTile ? '#00e5ff' : '#e94560';
+  zoomCtx.lineWidth = 1;
+  zoomCtx.strokeRect(dx, dy, dw, dh);
+
   zoomCtx.fillStyle = '#444';
   zoomCtx.font = '10px monospace';
-  zoomCtx.fillText(`${r.w}×${r.h}px  @ ${zScale.toFixed(1)}×`, 4, ZH - 4);
+  zoomCtx.fillText(`${zSrc.w}×${zSrc.h}px  @${zScale.toFixed(1)}×`, 4, ZH - (tileTag ? 28 : 4));
 
   // ── Info panel ──────────────────────────────────────────────────────────────
   document.getElementById('sp-id').textContent      = item.id;
@@ -431,16 +581,81 @@ function render() {
   document.getElementById('v-y').textContent = r.y;
   document.getElementById('v-w').textContent = r.w;
   document.getElementById('v-h').textContent = r.h;
-  document.getElementById('sp-warn').textContent = item.resizeWarn || '';
-  document.getElementById('sp-note').textContent = item.note || '';
-  document.getElementById('counter').textContent = `${idx + 1} / ${flat.length}`;
+
+  const isEnv = !!item.isEnvBlock;
+  document.getElementById('sp-warn').textContent = isEnv ? '' : (item.resizeWarn || '');
+  document.getElementById('sp-note').textContent = isEnv ? '' : (item.note || '');
+  document.getElementById('tag-panel').style.display = isEnv ? 'block' : 'none';
+  document.getElementById('counter').textContent = `${idx+1} / ${flat.length}`;
+
+  if (isEnv) renderTagPanel(item.blockRef);
+  renderHelp(isEnv);
 }
+
+// ─── Tag panel update ─────────────────────────────────────────────────────────
+function renderTagPanel(block) {
+  const stats = tagStats(block.id, block.cols * block.rows);
+
+  // Tile info line
+  const infoEl = document.getElementById('tile-sel-info');
+  if (selectedTile && selectedTile.blockId === block.id) {
+    const { col, row } = selectedTile;
+    const tag = getTileTag(block.id, col, row);
+    const tagLabel = tag ? TAG_BY_ID[tag]?.label : 'untagged';
+    infoEl.textContent = `Tile [${col}, ${row}]  →  ${tagLabel}`;
+    infoEl.style.color = tag ? solidColor(TAG_BY_ID[tag]?.color ?? '#fff') : '#888';
+  } else {
+    infoEl.textContent = 'Click a tile in the sheet to select it';
+    infoEl.style.color = '#888';
+  }
+
+  // Progress
+  document.getElementById('tag-progress').textContent =
+    `${stats.tagged} / ${stats.total} tiles tagged`;
+
+  // Highlight active tag button
+  const current = selectedTile ? getTileTag(block.id, selectedTile.col, selectedTile.row) : null;
+  document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tagId === current);
+  });
+}
+
+// ─── Help footer ──────────────────────────────────────────────────────────────
+function renderHelp(isEnvBlock) {
+  document.getElementById('help').innerHTML = isEnvBlock
+    ? '<b>←↑→↓</b> move block &nbsp; <b>click tile</b> select &nbsp; <b>1–8</b> tag &nbsp; <b>0</b> clear<br><b>S</b> save &nbsp; <b>Tab</b> next &nbsp; <b>Shift+Tab</b> prev'
+    : '<b>←↑→↓</b> move 1px &nbsp; <b>Shift+arrow</b> ×5 &nbsp; <b>Alt+←→</b> width &nbsp; <b>Alt+↑↓</b> height<br><b>S</b> save &nbsp; <b>Tab</b> next &nbsp; <b>Shift+Tab</b> prev';
+}
+
+// ─── Sheet canvas click → select tile ────────────────────────────────────────
+sheetCanvas.addEventListener('click', e => {
+  const item = flat[idx];
+  if (!item?.isEnvBlock) return;
+
+  const block = item.blockRef;
+  const tSz   = map.sections.environments.tile_size;
+  const cr    = sheetCanvas.getBoundingClientRect();
+
+  // Canvas pixel → image pixel
+  const imgX = (e.clientX - cr.left) * (sheetCanvas.width / cr.width) / scale;
+  const imgY = (e.clientY - cr.top)  * (sheetCanvas.height / cr.height) / scale;
+
+  // Must be inside the block
+  if (imgX < block.x || imgX >= block.x + block.cols * tSz.w) return;
+  if (imgY < block.y || imgY >= block.y + block.rows * tSz.h) return;
+
+  selectedTile = {
+    blockId: block.id,
+    col: Math.floor((imgX - block.x) / tSz.w),
+    row: Math.floor((imgY - block.y) / tSz.h),
+  };
+  render();
+});
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 async function show(i) {
-  if (dirty && document.getElementById('autosave').checked) {
-    await save(true);
-  }
+  if (dirty && document.getElementById('autosave').checked) await save(true);
+  selectedTile = null;                              // clear tile selection on any navigation
   idx   = Math.max(0, Math.min(flat.length - 1, i));
   dirty = false;
   document.getElementById('save-btn').classList.remove('dirty');
@@ -470,14 +685,13 @@ async function save(silent = false) {
   }
 }
 
-// ─── Status ───────────────────────────────────────────────────────────────────
-let _statusTimer;
+// ─── Misc ─────────────────────────────────────────────────────────────────────
+let _stTimer;
 function setStatus(msg) {
   document.getElementById('status').textContent = msg;
-  clearTimeout(_statusTimer);
-  if (msg !== 'Loading…' && msg !== 'Ready') {
-    _statusTimer = setTimeout(() => document.getElementById('status').textContent = '', 2200);
-  }
+  clearTimeout(_stTimer);
+  if (msg !== 'Loading…' && msg !== 'Ready')
+    _stTimer = setTimeout(() => document.getElementById('status').textContent = '', 2200);
 }
 
 function markDirty() {
@@ -486,26 +700,35 @@ function markDirty() {
 }
 
 // ─── Keyboard ─────────────────────────────────────────────────────────────────
-document.addEventListener('keydown', async (e) => {
+document.addEventListener('keydown', async e => {
   if (e.target.tagName === 'INPUT') return;
 
   const item = flat[idx];
   if (!item) return;
 
+  // Save
   if (e.key === 's' || e.key === 'S') { e.preventDefault(); await save(); return; }
 
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    await show(idx + (e.shiftKey ? -1 : 1));
-    return;
+  // Navigate
+  if (e.key === 'Tab') { e.preventDefault(); await show(idx + (e.shiftKey ? -1 : 1)); return; }
+
+  // Escape: deselect tile
+  if (e.key === 'Escape' && item.isEnvBlock) { selectedTile = null; render(); return; }
+
+  // Tag keys (only when an env block tile is selected)
+  if (item.isEnvBlock && selectedTile) {
+    if (e.key === '0' || e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault(); clearTag(); return;
+    }
+    if (TAG_BY_KEY[e.key]) { e.preventDefault(); applyTag(TAG_BY_KEY[e.key].id); return; }
   }
 
-  const step = e.shiftKey ? 5 : 1;
+  // Arrow keys: move / resize
   const arrows = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
   if (!arrows.includes(e.key)) return;
-
   e.preventDefault();
 
+  const step = e.shiftKey ? 5 : 1;
   if (e.altKey) {
     const dw = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? +step : 0;
     const dh = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? +step : 0;
@@ -515,17 +738,12 @@ document.addEventListener('keydown', async (e) => {
     const dy = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? +step : 0;
     item.moveBy(dx, dy);
   }
-
   markDirty();
   render();
 });
 
-// ─── Resize ───────────────────────────────────────────────────────────────────
-window.addEventListener('resize', () => {
-  if (!sheet) return;
-  sizeSheet();
-  render();
-});
+// ─── Window resize ────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => { if (sheet) { sizeSheet(); render(); } });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 init().catch(err => {

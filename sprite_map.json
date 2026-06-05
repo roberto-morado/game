@@ -62,7 +62,11 @@
       "blocks": [
         { "id": "dungeon", "x": 25,  "y": 582, "w": 469, "h": 201, "cols": 7, "rows": 3 },
         { "id": "room",    "x": 501, "y": 582, "w": 536, "h": 201, "cols": 8, "rows": 3 }
-      ]
+      ],
+      "tile_tags": {
+        "dungeon": {},
+        "room": {}
+      }
     },
 
     "items": {
