@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sprite Calibrator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #ddd;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      background: #1a1a2e;
+      border-bottom: 2px solid #e94560;
+      flex-shrink: 0;
+    }
+    #toolbar strong { color: #e94560; letter-spacing: 1px; }
+
+    button {
+      background: #222;
+      color: #ddd;
+      border: 1px solid #555;
+      padding: 3px 10px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    button:hover { background: #444; }
+
+    #save-btn { border-color: #4ecb71; color: #4ecb71; }
+    #save-btn:hover, #save-btn.dirty { background: #4ecb71; color: #000; }
+
+    .sep { color: #444; }
+    .counter { color: #e94560; min-width: 80px; text-align: center; font-weight: bold; }
+
+    #jump-input {
+      width: 52px;
+      background: #222;
+      color: #ddd;
+      border: 1px solid #555;
+      padding: 3px 6px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    #jump-input:focus { outline: 1px solid #e94560; }
+
+    #status { color: #4ecb71; font-size: 11px; margin-left: auto; min-width: 100px; text-align: right; }
+
+    /* ── Main layout ── */
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #sheet-panel { flex: 0 0 63%; overflow: auto; background: #0a0a0a; }
+    #sheet-canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+
+    #right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #161626;
+      border-left: 2px solid #e94560;
+      overflow: hidden;
+    }
+
+    /* ── Zoom view ── */
+    #zoom-wrap {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      border-bottom: 1px solid #2a2a3e;
+      min-height: 260px;
+      padding: 6px;
+    }
+    #zoom-canvas { image-rendering: pixelated; max-width: 100%; max-height: 248px; }
+
+    /* ── Details ── */
+    #details { flex: 1; padding: 12px 14px; overflow-y: auto; line-height: 1.9; }
+
+    #sp-id      { font-size: 15px; font-weight: bold; color: #e94560; }
+    #sp-section { color: #666; font-size: 11px; margin-bottom: 8px; }
+
+    .coords { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
+    .coord  { color: #777; }
+    .coord b { color: #fff; }
+
+    #sp-warn { color: #f0a500; font-size: 11px; margin-top: 8px; }
+    #sp-note { color: #555; font-size: 11px; margin-top: 4px; }
+
+    /* ── Help footer ── */
+    #help {
+      padding: 8px 14px;
+      font-size: 11px;
+      color: #555;
+      border-top: 1px solid #2a2a3e;
+      flex-shrink: 0;
+      line-height: 1.8;
+    }
+    #help b { color: #888; }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <strong>SPRITE CALIBRATOR</strong>
+  <span class="sep">|</span>
+  <button onclick="navigate(-1)">◀ PREV</button>
+  <span class="counter" id="counter">— / —</span>
+  <button onclick="navigate(1)">NEXT ▶</button>
+  <span class="sep">|</span>
+  <span>Jump:</span>
+  <input type="number" id="jump-input" min="1" placeholder="#">
+  <button onclick="jumpTo()">GO</button>
+  <span class="sep">|</span>
+  <label style="font-size:11px; cursor:pointer">
+    <input type="checkbox" id="autosave" checked> auto-save on next
+  </label>
+  <span id="status"></span>
+  <button id="save-btn" onclick="save()">SAVE  [S]</button>
+</div>
+
+<div id="main">
+  <div id="sheet-panel">
+    <canvas id="sheet-canvas"></canvas>
+  </div>
+
+  <div id="right-panel">
+    <div id="zoom-wrap">
+      <canvas id="zoom-canvas" width="240" height="240"></canvas>
+    </div>
+    <div id="details">
+      <div id="sp-id">Loading…</div>
+      <div id="sp-section"></div>
+      <div class="coords">
+        <div class="coord">x: <b id="v-x">—</b></div>
+        <div class="coord">y: <b id="v-y">—</b></div>
+        <div class="coord">w: <b id="v-w">—</b></div>
+        <div class="coord">h: <b id="v-h">—</b></div>
+      </div>
+      <div id="sp-warn"></div>
+      <div id="sp-note"></div>
+    </div>
+    <div id="help">
+      <b>←↑→↓</b> &nbsp;move 1px &nbsp;&nbsp; <b>Shift+arrow</b> &nbsp;move 5px<br>
+      <b>Alt+←→</b> &nbsp;width &nbsp;&nbsp; <b>Alt+↑↓</b> &nbsp;height<br>
+      <b>S</b> &nbsp;save &nbsp;&nbsp; <b>Tab</b> &nbsp;next &nbsp;&nbsp; <b>Shift+Tab</b> &nbsp;prev
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let map      = null;   // live copy of sprite_map.json (mutated in place)
+let flat     = [];     // flat list of calibration items
+let idx      = 0;      // current sprite index
+let dirty    = false;
+let sheet    = null;   // HTMLImageElement
+let scale    = 1;      // sheet canvas scale factor
+
+const sheetPanel  = document.getElementById('sheet-panel');
+const sheetCanvas = document.getElementById('sheet-canvas');
+const sheetCtx    = sheetCanvas.getContext('2d');
+const zoomCanvas  = document.getElementById('zoom-canvas');
+const zoomCtx     = zoomCanvas.getContext('2d');
+
+// ─── Build flat calibration list ──────────────────────────────────────────────
+function buildFlat(m) {
+  const list = [];
+  const s = m.sections;
+
+  function add(item) { list.push(item); }
+
+  // ── Characters ──
+  const cSz = s.characters.sprite_size;
+  for (const sp of s.characters.sprites) {
+    add({
+      id:         sp.id,
+      section:    `characters · ${sp.role}`,
+      resizeWarn: '⚠ Resize affects sprite_size shared by ALL characters',
+      getRect:    () => ({ x: sp.x, y: sp.y, w: cSz.w, h: cSz.h }),
+      moveBy:     (dx, dy) => { sp.x += dx; sp.y += dy; },
+      resizeBy:   (dw, dh) => { cSz.w = Math.max(1, cSz.w + dw); cSz.h = Math.max(1, cSz.h + dh); },
+    });
+  }
+
+  // ── Bosses ──
+  const bSz = s.bosses.sprite_size;
+  for (const sp of s.bosses.sprites) {
+    add({
+      id:         sp.id,
+      section:    'bosses',
+      resizeWarn: '⚠ Resize affects sprite_size shared by ALL bosses',
+      getRect:    () => ({ x: sp.x, y: sp.y, w: bSz.w, h: bSz.h }),
+      moveBy:     (dx, dy) => { sp.x += dx; sp.y += dy; },
+      resizeBy:   (dw, dh) => { bSz.w = Math.max(1, bSz.w + dw); bSz.h = Math.max(1, bSz.h + dh); },
+    });
+  }
+
+  // ── Environments: one item per block ──
+  // Moving shifts the block anchor → all tiles in the block shift together.
+  // Resizing changes tile_size → all tiles resize together.
+  const tSz = s.environments.tile_size;
+  for (const block of s.environments.blocks) {
+    add({
+      id:         `${block.id}_block`,
+      section:    'environments · block',
+      note:       `${block.cols}×${block.rows} tiles of ${tSz.w}×${tSz.h}px · moving shifts all tiles together`,
+      resizeWarn: '⚠ Resize changes tile_size shared by ALL environment tiles',
+      isEnvBlock: true,
+      blockRef:   block,
+      getRect:    () => ({ x: block.x, y: block.y, w: block.cols * tSz.w, h: block.rows * tSz.h }),
+      moveBy:     (dx, dy) => { block.x += dx; block.y += dy; },
+      resizeBy:   (dw, dh) => { tSz.w = Math.max(1, tSz.w + dw); tSz.h = Math.max(1, tSz.h + dh); },
+    });
+  }
+
+  // ── Items (individual x+w, shared y+h) ──
+  for (const sp of s.items.sprites) {
+    add({
+      id:       sp.id,
+      section:  'items',
+      note:     'Row Y is shared — ↑↓ moves the entire items row',
+      getRect:  () => ({ x: sp.x, y: s.items.row_y, w: sp.w, h: s.items.row_height }),
+      moveBy:   (dx, dy) => { sp.x += dx; s.items.row_y += dy; },
+      resizeBy: (dw, dh) => { sp.w = Math.max(1, sp.w + dw); s.items.row_height = Math.max(1, s.items.row_height + dh); },
+    });
+  }
+
+  // ── Portraits (individual x, shared y+size) ──
+  const pSz = s.portraits.sprite_size;
+  for (const sp of s.portraits.sprites) {
+    add({
+      id:         sp.id,
+      section:    `portraits · ${sp.role}`,
+      note:       'Row Y is shared — ↑↓ moves the entire portraits row',
+      resizeWarn: '⚠ Resize affects sprite_size shared by ALL portraits',
+      getRect:    () => ({ x: sp.x, y: s.portraits.row_y, w: pSz.w, h: pSz.h }),
+      moveBy:     (dx, dy) => { sp.x += dx; s.portraits.row_y += dy; },
+      resizeBy:   (dw, dh) => { pSz.w = Math.max(1, pSz.w + dw); pSz.h = Math.max(1, pSz.h + dh); },
+    });
+  }
+
+  // ── Interface (individual x+w, shared y+h) ──
+  for (const sp of s.interface.sprites) {
+    const spId = sp.id ?? sp.name;
+    add({
+      id:       spId,
+      section:  'interface',
+      note:     'Row Y is shared — ↑↓ moves the entire interface row',
+      getRect:  () => ({ x: sp.x, y: s.interface.row_y, w: sp.w, h: s.interface.row_height }),
+      moveBy:   (dx, dy) => { sp.x += dx; s.interface.row_y += dy; },
+      resizeBy: (dw, _)  => { sp.w = Math.max(1, sp.w + dw); },
+    });
+  }
+
+  // ── Effects (individual x+w, shared y+h) ──
+  for (const sp of s.effects.sprites) {
+    add({
+      id:       sp.id,
+      section:  'effects',
+      note:     'Row Y is shared — ↑↓ moves the entire effects row',
+      getRect:  () => ({ x: sp.x, y: s.effects.row_y, w: sp.w, h: s.effects.row_height }),
+      moveBy:   (dx, dy) => { sp.x += dx; s.effects.row_y += dy; },
+      resizeBy: (dw, _)  => { sp.w = Math.max(1, sp.w + dw); },
+    });
+  }
+
+  // ── Fonts (individual x+w, shared y+h) ──
+  for (const [letter, glyph] of Object.entries(s.fonts.glyphs)) {
+    add({
+      id:         `"${letter}"`,
+      section:    'fonts',
+      note:       'Row Y is shared — ↑↓ moves the entire font row',
+      resizeWarn: '⚠ Alt+↑↓ changes row_height shared by ALL glyphs',
+      getRect:    () => ({ x: glyph.x, y: s.fonts.row_y, w: glyph.w, h: s.fonts.row_height }),
+      moveBy:     (dx, dy) => { glyph.x += dx; s.fonts.row_y += dy; },
+      resizeBy:   (dw, dh) => { glyph.w = Math.max(1, glyph.w + dw); s.fonts.row_height = Math.max(1, s.fonts.row_height + dh); },
+    });
+  }
+
+  return list;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  setStatus('Loading…');
+
+  const [mapRes] = await Promise.all([fetch('/api/sprite-map')]);
+  map  = await mapRes.json();
+  flat = buildFlat(map);
+
+  sheet = await new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = '/sheet.jpeg';
+  });
+
+  sizeSheet();
+  show(0);
+  setStatus('Ready');
+}
+
+// ─── Sheet canvas sizing ──────────────────────────────────────────────────────
+function sizeSheet() {
+  scale = sheetPanel.clientWidth / map.image_size.w;
+  sheetCanvas.width  = Math.round(map.image_size.w * scale);
+  sheetCanvas.height = Math.round(map.image_size.h * scale);
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  if (!sheet || flat.length === 0) return;
+  const item = flat[idx];
+  const r    = item.getRect();
+
+  // ── Sheet view ──────────────────────────────────────────────────────────────
+  sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+  sheetCtx.drawImage(sheet, 0, 0, sheetCanvas.width, sheetCanvas.height);
+
+  // Dim everything
+  sheetCtx.fillStyle = 'rgba(0,0,0,0.6)';
+  sheetCtx.fillRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+
+  // Restore full brightness for the current sprite region
+  const sx = r.x * scale, sy = r.y * scale, sw = r.w * scale, sh = r.h * scale;
+  sheetCtx.drawImage(sheet, r.x, r.y, r.w, r.h, sx, sy, sw, sh);
+
+  // Red border
+  sheetCtx.strokeStyle = '#e94560';
+  sheetCtx.lineWidth = 2;
+  sheetCtx.strokeRect(sx - 1, sy - 1, sw + 2, sh + 2);
+
+  // Yellow crosshair corners
+  sheetCtx.strokeStyle = '#FFD700';
+  sheetCtx.lineWidth = 1;
+  const t = 7;
+  for (const [cx, cy] of [[sx, sy], [sx+sw, sy], [sx, sy+sh], [sx+sw, sy+sh]]) {
+    sheetCtx.beginPath();
+    sheetCtx.moveTo(cx - t, cy); sheetCtx.lineTo(cx + t, cy);
+    sheetCtx.moveTo(cx, cy - t); sheetCtx.lineTo(cx, cy + t);
+    sheetCtx.stroke();
+  }
+
+  // Grid overlay for environment blocks
+  if (item.isEnvBlock) {
+    const tSz = map.sections.environments.tile_size;
+    const block = item.blockRef;
+    sheetCtx.strokeStyle = 'rgba(255,215,0,0.35)';
+    sheetCtx.lineWidth = 1;
+    for (let c = 1; c < block.cols; c++) {
+      const lx = (block.x + c * tSz.w) * scale;
+      sheetCtx.beginPath();
+      sheetCtx.moveTo(lx, sy); sheetCtx.lineTo(lx, sy + sh);
+      sheetCtx.stroke();
+    }
+    for (let row = 1; row < block.rows; row++) {
+      const ly = (block.y + row * tSz.h) * scale;
+      sheetCtx.beginPath();
+      sheetCtx.moveTo(sx, ly); sheetCtx.lineTo(sx + sw, ly);
+      sheetCtx.stroke();
+    }
+  }
+
+  // Auto-scroll sheet to keep sprite visible
+  const mid = sy + sh / 2;
+  const target = mid - sheetPanel.clientHeight / 2;
+  sheetPanel.scrollTop = Math.max(0, target);
+
+  // ── Zoom view ───────────────────────────────────────────────────────────────
+  const ZW = 240, ZH = 240;
+  zoomCanvas.width = ZW; zoomCanvas.height = ZH;
+
+  // Checkerboard background
+  for (let gy = 0; gy < ZH; gy += 8) {
+    for (let gx = 0; gx < ZW; gx += 8) {
+      zoomCtx.fillStyle = ((gx + gy) / 8) % 2 === 0 ? '#1c1c1c' : '#252525';
+      zoomCtx.fillRect(gx, gy, 8, 8);
+    }
+  }
+
+  const zScale = Math.min(ZW / r.w, ZH / r.h) * 0.88;
+  const dw = r.w * zScale, dh = r.h * zScale;
+  const dx = (ZW - dw) / 2, dy = (ZH - dh) / 2;
+
+  zoomCtx.imageSmoothingEnabled = false;
+  zoomCtx.drawImage(sheet, r.x, r.y, r.w, r.h, dx, dy, dw, dh);
+
+  zoomCtx.strokeStyle = '#e94560';
+  zoomCtx.lineWidth = 1;
+  zoomCtx.strokeRect(dx, dy, dw, dh);
+
+  // Grid lines in zoom for env blocks
+  if (item.isEnvBlock) {
+    const tSz = map.sections.environments.tile_size;
+    const block = item.blockRef;
+    zoomCtx.strokeStyle = 'rgba(255,215,0,0.5)';
+    for (let c = 1; c < block.cols; c++) {
+      const lx = dx + c * tSz.w * zScale;
+      zoomCtx.beginPath(); zoomCtx.moveTo(lx, dy); zoomCtx.lineTo(lx, dy+dh); zoomCtx.stroke();
+    }
+    for (let row = 1; row < block.rows; row++) {
+      const ly = dy + row * tSz.h * zScale;
+      zoomCtx.beginPath(); zoomCtx.moveTo(dx, ly); zoomCtx.lineTo(dx+dw, ly); zoomCtx.stroke();
+    }
+  }
+
+  // Scale label in zoom
+  zoomCtx.fillStyle = '#444';
+  zoomCtx.font = '10px monospace';
+  zoomCtx.fillText(`${r.w}×${r.h}px  @ ${zScale.toFixed(1)}×`, 4, ZH - 4);
+
+  // ── Info panel ──────────────────────────────────────────────────────────────
+  document.getElementById('sp-id').textContent      = item.id;
+  document.getElementById('sp-section').textContent = item.section;
+  document.getElementById('v-x').textContent = r.x;
+  document.getElementById('v-y').textContent = r.y;
+  document.getElementById('v-w').textContent = r.w;
+  document.getElementById('v-h').textContent = r.h;
+  document.getElementById('sp-warn').textContent = item.resizeWarn || '';
+  document.getElementById('sp-note').textContent = item.note || '';
+  document.getElementById('counter').textContent = `${idx + 1} / ${flat.length}`;
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+async function show(i) {
+  if (dirty && document.getElementById('autosave').checked) {
+    await save(true);
+  }
+  idx   = Math.max(0, Math.min(flat.length - 1, i));
+  dirty = false;
+  document.getElementById('save-btn').classList.remove('dirty');
+  render();
+}
+
+function navigate(delta) { show(idx + delta); }
+
+function jumpTo() {
+  const v = parseInt(document.getElementById('jump-input').value, 10);
+  if (!isNaN(v)) show(v - 1);
+}
+
+// ─── Save ─────────────────────────────────────────────────────────────────────
+async function save(silent = false) {
+  try {
+    await fetch('/api/sprite-map', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(map, null, 2),
+    });
+    dirty = false;
+    document.getElementById('save-btn').classList.remove('dirty');
+    if (!silent) setStatus('Saved ✓');
+  } catch {
+    setStatus('Save failed ✗');
+  }
+}
+
+// ─── Status ───────────────────────────────────────────────────────────────────
+let _statusTimer;
+function setStatus(msg) {
+  document.getElementById('status').textContent = msg;
+  clearTimeout(_statusTimer);
+  if (msg !== 'Loading…' && msg !== 'Ready') {
+    _statusTimer = setTimeout(() => document.getElementById('status').textContent = '', 2200);
+  }
+}
+
+function markDirty() {
+  dirty = true;
+  document.getElementById('save-btn').classList.add('dirty');
+}
+
+// ─── Keyboard ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', async (e) => {
+  if (e.target.tagName === 'INPUT') return;
+
+  const item = flat[idx];
+  if (!item) return;
+
+  if (e.key === 's' || e.key === 'S') { e.preventDefault(); await save(); return; }
+
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    await show(idx + (e.shiftKey ? -1 : 1));
+    return;
+  }
+
+  const step = e.shiftKey ? 5 : 1;
+  const arrows = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
+  if (!arrows.includes(e.key)) return;
+
+  e.preventDefault();
+
+  if (e.altKey) {
+    const dw = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? +step : 0;
+    const dh = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? +step : 0;
+    item.resizeBy(dw, dh);
+  } else {
+    const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? +step : 0;
+    const dy = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? +step : 0;
+    item.moveBy(dx, dy);
+  }
+
+  markDirty();
+  render();
+});
+
+// ─── Resize ───────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  if (!sheet) return;
+  sizeSheet();
+  render();
+});
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+init().catch(err => {
+  document.getElementById('sp-id').textContent = 'Error: ' + err.message;
+  console.error(err);
+});
+</script>
+</body>
+</html>

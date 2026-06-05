@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "calibrate": "deno run --allow-read --allow-write=sprite_map.json --allow-net utility/main.ts"
+  }
+}
