@@ -1,523 +1,189 @@
 {
   "source": "IMG_4879.jpeg",
-  "image_size": {
-    "w": 1108,
-    "h": 1648
-  },
-  "notes": "JPEG screenshot. Sprite content ~68px wide; gap ~7px between sprites; cell pitch ~75px. Bosses are exactly 2x characters per axis (4x area). Tiles are 67x67px.",
+  "image_size": { "w": 1108, "h": 1648 },
+  "notes": "JPEG screenshot — a few px of JPEG fuzz at sprite edges is normal. Sprite content ~68px; gap ~7px; cell pitch ~75px. Bosses are 2x characters per axis. Environment tiles are 67x67px. Sprites are referenced by clip rect (x, y, w, h) directly on the source image — no need to extract individual files.",
+
   "sections": {
+
     "characters": {
-      "note": "28 sprites total across 2 rows of 14 each",
-      "sprite_size": {
-        "w": 68,
-        "h": 68
-      },
-      "cell_pitch": {
-        "x": 75,
-        "y": 76
-      },
-      "rows": [
-        {
-          "row": 0,
-          "y": 97,
-          "count": 14,
-          "x_starts": [
-            25,
-            100,
-            175,
-            250,
-            326,
-            401,
-            476,
-            551,
-            626,
-            702,
-            777,
-            852,
-            927,
-            1003
-          ]
-        },
-        {
-          "row": 1,
-          "y": 173,
-          "count": 14,
-          "x_starts": [
-            24,
-            100,
-            174,
-            250,
-            325,
-            401,
-            476,
-            551,
-            626,
-            701,
-            776,
-            852,
-            927,
-            1003
-          ]
-        }
+      "note": "28 sprites total. Row 0 indices 0-2 are the three playable classes; all others are enemies.",
+      "sprite_size": { "w": 68, "h": 68 },
+      "cell_pitch": { "x": 75, "y": 76 },
+      "sprites": [
+        { "id": "archer",  "role": "player", "row": 0, "col": 0,  "x": 25,   "y": 97  },
+        { "id": "knight",  "role": "player", "row": 0, "col": 1,  "x": 100,  "y": 97  },
+        { "id": "wizard",  "role": "player", "row": 0, "col": 2,  "x": 175,  "y": 97  },
+        { "id": "enemy_0", "role": "enemy",  "row": 0, "col": 3,  "x": 250,  "y": 97  },
+        { "id": "enemy_1", "role": "enemy",  "row": 0, "col": 4,  "x": 326,  "y": 97  },
+        { "id": "enemy_2", "role": "enemy",  "row": 0, "col": 5,  "x": 401,  "y": 97  },
+        { "id": "enemy_3", "role": "enemy",  "row": 0, "col": 6,  "x": 476,  "y": 97  },
+        { "id": "enemy_4", "role": "enemy",  "row": 0, "col": 7,  "x": 551,  "y": 97  },
+        { "id": "enemy_5", "role": "enemy",  "row": 0, "col": 8,  "x": 626,  "y": 97  },
+        { "id": "enemy_6", "role": "enemy",  "row": 0, "col": 9,  "x": 702,  "y": 97  },
+        { "id": "enemy_7", "role": "enemy",  "row": 0, "col": 10, "x": 777,  "y": 97  },
+        { "id": "enemy_8", "role": "enemy",  "row": 0, "col": 11, "x": 852,  "y": 97  },
+        { "id": "enemy_9", "role": "enemy",  "row": 0, "col": 12, "x": 927,  "y": 97  },
+        { "id": "enemy_10","role": "enemy",  "row": 0, "col": 13, "x": 1003, "y": 97  },
+        { "id": "enemy_11","role": "enemy",  "row": 1, "col": 0,  "x": 24,   "y": 173 },
+        { "id": "enemy_12","role": "enemy",  "row": 1, "col": 1,  "x": 100,  "y": 173 },
+        { "id": "enemy_13","role": "enemy",  "row": 1, "col": 2,  "x": 174,  "y": 173 },
+        { "id": "enemy_14","role": "enemy",  "row": 1, "col": 3,  "x": 250,  "y": 173 },
+        { "id": "enemy_15","role": "enemy",  "row": 1, "col": 4,  "x": 325,  "y": 173 },
+        { "id": "enemy_16","role": "enemy",  "row": 1, "col": 5,  "x": 401,  "y": 173 },
+        { "id": "enemy_17","role": "enemy",  "row": 1, "col": 6,  "x": 476,  "y": 173 },
+        { "id": "enemy_18","role": "enemy",  "row": 1, "col": 7,  "x": 551,  "y": 173 },
+        { "id": "enemy_19","role": "enemy",  "row": 1, "col": 8,  "x": 626,  "y": 173 },
+        { "id": "enemy_20","role": "enemy",  "row": 1, "col": 9,  "x": 701,  "y": 173 },
+        { "id": "enemy_21","role": "enemy",  "row": 1, "col": 10, "x": 776,  "y": 173 },
+        { "id": "enemy_22","role": "enemy",  "row": 1, "col": 11, "x": 852,  "y": 173 },
+        { "id": "enemy_23","role": "enemy",  "row": 1, "col": 12, "x": 927,  "y": 173 },
+        { "id": "enemy_24","role": "enemy",  "row": 1, "col": 13, "x": 1003, "y": 173 }
       ]
     },
+
     "bosses": {
-      "note": "7 bosses in a single row; each is 2x character size (134px vs 68px per axis)",
-      "sprite_size": {
-        "w": 135,
-        "h": 134
-      },
-      "cell_pitch": {
-        "x": 142
-      },
-      "rows": [
-        {
-          "row": 0,
-          "y": 349,
-          "count": 7,
-          "x_starts": [
-            25,
-            166,
-            309,
-            451,
-            593,
-            735,
-            877
-          ]
-        }
+      "note": "7 bosses in a single row. Each is 2x a character per axis (4x area). No portrait exists for bosses; see portrait section for the suggested workaround.",
+      "sprite_size": { "w": 135, "h": 134 },
+      "cell_pitch": { "x": 142 },
+      "sprites": [
+        { "id": "boss_0", "x": 25,  "y": 349 },
+        { "id": "boss_1", "x": 166, "y": 349 },
+        { "id": "boss_2", "x": 309, "y": 349 },
+        { "id": "boss_3", "x": 451, "y": 349 },
+        { "id": "boss_4", "x": 593, "y": 349 },
+        { "id": "boss_5", "x": 735, "y": 349 },
+        { "id": "boss_6", "x": 877, "y": 349 }
       ]
     },
+
     "environments": {
-      "note": "Two pre-assembled scene blocks, each 3 rows x N cols of 67x67px tiles",
-      "tile_size": {
-        "w": 67,
-        "h": 67
-      },
+      "note": "Two pre-assembled scene blocks made of 67x67px tiles. Left block = 7x3 tiles (dungeon floor/dirt theme). Right block = 8x3 tiles (stone wall/room theme). Access individual tiles via tile_at(block, col, row).",
+      "tile_size": { "w": 67, "h": 67 },
       "blocks": [
-        {
-          "name": "left",
-          "x": 25,
-          "y": 582,
-          "w": 469,
-          "h": 201,
-          "cols": 7,
-          "rows": 3
-        },
-        {
-          "name": "right",
-          "x": 501,
-          "y": 582,
-          "w": 536,
-          "h": 201,
-          "cols": 8,
-          "rows": 3
-        }
+        { "id": "dungeon", "x": 25,  "y": 582, "w": 469, "h": 201, "cols": 7, "rows": 3 },
+        { "id": "room",    "x": 501, "y": 582, "w": 536, "h": 201, "cols": 8, "rows": 3 }
       ]
     },
+
     "items": {
-      "note": "16 items in a single row; NOT a uniform grid\u2014widths vary (35\u201369px)",
+      "note": "16 items in a single row. NOT a uniform grid — widths vary (35-69px). Each item uses its own clip rect.",
       "row_y": 892,
       "row_height": 75,
       "sprites": [
-        {
-          "index": 0,
-          "x": 25,
-          "w": 52
-        },
-        {
-          "index": 1,
-          "x": 83,
-          "w": 60
-        },
-        {
-          "index": 2,
-          "x": 150,
-          "w": 68
-        },
-        {
-          "index": 3,
-          "x": 225,
-          "w": 68
-        },
-        {
-          "index": 4,
-          "x": 300,
-          "w": 61
-        },
-        {
-          "index": 5,
-          "x": 376,
-          "w": 35
-        },
-        {
-          "index": 6,
-          "x": 417,
-          "w": 52
-        },
-        {
-          "index": 7,
-          "x": 476,
-          "w": 52
-        },
-        {
-          "index": 8,
-          "x": 535,
-          "w": 51
-        },
-        {
-          "index": 9,
-          "x": 594,
-          "w": 67
-        },
-        {
-          "index": 10,
-          "x": 668,
-          "w": 52
-        },
-        {
-          "index": 11,
-          "x": 727,
-          "w": 52
-        },
-        {
-          "index": 12,
-          "x": 785,
-          "w": 69
-        },
-        {
-          "index": 13,
-          "x": 860,
-          "w": 61
-        },
-        {
-          "index": 14,
-          "x": 927,
-          "w": 69
-        },
-        {
-          "index": 15,
-          "x": 1002,
-          "w": 69
-        }
+        { "id": "item_0",  "x": 25,   "w": 52 },
+        { "id": "item_1",  "x": 83,   "w": 60 },
+        { "id": "item_2",  "x": 150,  "w": 68 },
+        { "id": "item_3",  "x": 225,  "w": 68 },
+        { "id": "item_4",  "x": 300,  "w": 61 },
+        { "id": "item_5",  "x": 376,  "w": 35 },
+        { "id": "item_6",  "x": 417,  "w": 52 },
+        { "id": "item_7",  "x": 476,  "w": 52 },
+        { "id": "item_8",  "x": 535,  "w": 51 },
+        { "id": "item_9",  "x": 594,  "w": 67 },
+        { "id": "item_10", "x": 668,  "w": 52 },
+        { "id": "item_11", "x": 727,  "w": 52 },
+        { "id": "item_12", "x": 785,  "w": 69 },
+        { "id": "item_13", "x": 860,  "w": 61 },
+        { "id": "item_14", "x": 927,  "w": 69 },
+        { "id": "item_15", "x": 1002, "w": 69 }
       ]
     },
+
     "portraits": {
-      "note": "14 portraits, same 75px cell grid as characters. Used for battle UI (Pokemon-style).",
-      "sprite_size": {
-        "w": 68,
-        "h": 69
+      "note": "14 portraits total. Portraits 0-2 match the three player classes (archer, knight, wizard) and are used in the battle HUD and class-select screen. Portraits 3-13 do NOT correspond to any enemy sprite — they are best used as NPC faces for dialogue, shops, and cutscenes (see 'suggested_uses').",
+      "sprite_size": { "w": 68, "h": 69 },
+      "cell_pitch": { "x": 75 },
+      "row_y": 1066,
+      "suggested_uses": {
+        "portraits_0_to_2": "Player HUD (bottom-left corner during battle), class selection screen",
+        "portraits_3_to_13": "NPC dialogue speaker avatars (merchants, quest givers, inn keepers, etc.). Assign one per named NPC — these faces have no canonical identity in the sheet so you have full freedom."
       },
-      "cell_pitch": {
-        "x": 75
-      },
-      "rows": [
-        {
-          "row": 0,
-          "y": 1066,
-          "count": 14,
-          "x_starts": [
-            25,
-            100,
-            175,
-            250,
-            326,
-            401,
-            476,
-            551,
-            626,
-            702,
-            777,
-            852,
-            927,
-            1002
-          ]
-        }
+      "sprites": [
+        { "id": "portrait_archer",  "role": "player", "x": 25,   "y": 1066 },
+        { "id": "portrait_knight",  "role": "player", "x": 100,  "y": 1066 },
+        { "id": "portrait_wizard",  "role": "player", "x": 175,  "y": 1066 },
+        { "id": "portrait_npc_0",   "role": "npc",    "x": 250,  "y": 1066 },
+        { "id": "portrait_npc_1",   "role": "npc",    "x": 326,  "y": 1066 },
+        { "id": "portrait_npc_2",   "role": "npc",    "x": 401,  "y": 1066 },
+        { "id": "portrait_npc_3",   "role": "npc",    "x": 476,  "y": 1066 },
+        { "id": "portrait_npc_4",   "role": "npc",    "x": 551,  "y": 1066 },
+        { "id": "portrait_npc_5",   "role": "npc",    "x": 626,  "y": 1066 },
+        { "id": "portrait_npc_6",   "role": "npc",    "x": 702,  "y": 1066 },
+        { "id": "portrait_npc_7",   "role": "npc",    "x": 777,  "y": 1066 },
+        { "id": "portrait_npc_8",   "role": "npc",    "x": 852,  "y": 1066 },
+        { "id": "portrait_npc_9",   "role": "npc",    "x": 927,  "y": 1066 },
+        { "id": "portrait_npc_10",  "role": "npc",    "x": 1002, "y": 1066 }
       ]
     },
+
     "interface": {
-      "note": "Health bar + 13 UI elements in one row",
+      "note": "Health bar + 13 UI elements in one row. All share y=1250, height=52.",
       "row_y": 1250,
       "row_height": 52,
       "sprites": [
-        {
-          "name": "health_bar",
-          "x": 25,
-          "w": 294
-        },
-        {
-          "index": 1,
-          "x": 325,
-          "w": 52
-        },
-        {
-          "index": 2,
-          "x": 384,
-          "w": 52
-        },
-        {
-          "index": 3,
-          "x": 440,
-          "w": 57
-        },
-        {
-          "index": 4,
-          "x": 501,
-          "w": 52
-        },
-        {
-          "index": 5,
-          "x": 560,
-          "w": 51
-        },
-        {
-          "index": 6,
-          "x": 618,
-          "w": 44
-        },
-        {
-          "index": 7,
-          "x": 668,
-          "w": 44
-        },
-        {
-          "index": 8,
-          "x": 718,
-          "w": 52
-        },
-        {
-          "index": 9,
-          "x": 777,
-          "w": 52
-        },
-        {
-          "index": 10,
-          "x": 835,
-          "w": 44
-        },
-        {
-          "index": 11,
-          "x": 885,
-          "w": 52
-        },
-        {
-          "index": 12,
-          "x": 944,
-          "w": 52
-        },
-        {
-          "index": 13,
-          "x": 1002,
-          "w": 52
-        }
+        { "id": "health_bar",  "x": 25,   "w": 294 },
+        { "id": "ui_1",        "x": 325,  "w": 52  },
+        { "id": "ui_2",        "x": 384,  "w": 52  },
+        { "id": "ui_3",        "x": 440,  "w": 57  },
+        { "id": "ui_4",        "x": 501,  "w": 52  },
+        { "id": "ui_5",        "x": 560,  "w": 51  },
+        { "id": "ui_6",        "x": 618,  "w": 44  },
+        { "id": "ui_7",        "x": 668,  "w": 44  },
+        { "id": "ui_8",        "x": 718,  "w": 52  },
+        { "id": "ui_9",        "x": 777,  "w": 52  },
+        { "id": "ui_10",       "x": 835,  "w": 44  },
+        { "id": "ui_11",       "x": 885,  "w": 52  },
+        { "id": "ui_12",       "x": 944,  "w": 52  },
+        { "id": "ui_13",       "x": 1002, "w": 52  }
       ]
     },
+
     "effects": {
-      "note": "18 effect sprites in one row; variable widths (10\u201371px)",
+      "note": "18 effect sprites in one row; variable widths (10-71px). All share y=1409, height=68.",
       "row_y": 1409,
       "row_height": 68,
       "sprites": [
-        {
-          "index": 0,
-          "x": 0,
-          "w": 53
-        },
-        {
-          "index": 1,
-          "x": 91,
-          "w": 69
-        },
-        {
-          "index": 2,
-          "x": 167,
-          "w": 26
-        },
-        {
-          "index": 3,
-          "x": 209,
-          "w": 26
-        },
-        {
-          "index": 4,
-          "x": 242,
-          "w": 60
-        },
-        {
-          "index": 5,
-          "x": 309,
-          "w": 10
-        },
-        {
-          "index": 6,
-          "x": 325,
-          "w": 36
-        },
-        {
-          "index": 7,
-          "x": 367,
-          "w": 10
-        },
-        {
-          "index": 8,
-          "x": 384,
-          "w": 69
-        },
-        {
-          "index": 9,
-          "x": 458,
-          "w": 71
-        },
-        {
-          "index": 10,
-          "x": 534,
-          "w": 69
-        },
-        {
-          "index": 11,
-          "x": 609,
-          "w": 71
-        },
-        {
-          "index": 12,
-          "x": 692,
-          "w": 63
-        },
-        {
-          "index": 13,
-          "x": 759,
-          "w": 71
-        },
-        {
-          "index": 14,
-          "x": 843,
-          "w": 28
-        },
-        {
-          "index": 15,
-          "x": 892,
-          "w": 45
-        },
-        {
-          "index": 16,
-          "x": 951,
-          "w": 46
-        },
-        {
-          "index": 17,
-          "x": 1009,
-          "w": 56
-        }
+        { "id": "effect_0",  "x": 0,    "w": 53 },
+        { "id": "effect_1",  "x": 91,   "w": 69 },
+        { "id": "effect_2",  "x": 167,  "w": 26 },
+        { "id": "effect_3",  "x": 209,  "w": 26 },
+        { "id": "effect_4",  "x": 242,  "w": 60 },
+        { "id": "effect_5",  "x": 309,  "w": 10 },
+        { "id": "effect_6",  "x": 325,  "w": 36 },
+        { "id": "effect_7",  "x": 367,  "w": 10 },
+        { "id": "effect_8",  "x": 384,  "w": 69 },
+        { "id": "effect_9",  "x": 458,  "w": 71 },
+        { "id": "effect_10", "x": 534,  "w": 69 },
+        { "id": "effect_11", "x": 609,  "w": 71 },
+        { "id": "effect_12", "x": 692,  "w": 63 },
+        { "id": "effect_13", "x": 759,  "w": 71 },
+        { "id": "effect_14", "x": 843,  "w": 28 },
+        { "id": "effect_15", "x": 892,  "w": 45 },
+        { "id": "effect_16", "x": 951,  "w": 46 },
+        { "id": "effect_17", "x": 1009, "w": 56 }
       ]
     },
+
     "fonts": {
-      "note": "Proportional pixel font A\u2013Z. Three width classes: narrow=27px (C,E,F,I,L,T,Z), standard=35px, wide=44px (M,W). Height: 44px.",
+      "note": "Proportional pixel font, A-Z only. Height: 44px. Three width classes — narrow=27px (C,E,F,I,L,T,Z), standard=35px (most), wide=44px (M,W). All share y=1584.",
       "row_y": 1584,
       "row_height": 44,
       "glyphs": {
-        "A": {
-          "x": 25,
-          "w": 35
-        },
-        "B": {
-          "x": 66,
-          "w": 36
-        },
-        "C": {
-          "x": 108,
-          "w": 27
-        },
-        "D": {
-          "x": 142,
-          "w": 35
-        },
-        "E": {
-          "x": 183,
-          "w": 27
-        },
-        "F": {
-          "x": 217,
-          "w": 27
-        },
-        "G": {
-          "x": 250,
-          "w": 35
-        },
-        "H": {
-          "x": 292,
-          "w": 35
-        },
-        "I": {
-          "x": 334,
-          "w": 27
-        },
-        "J": {
-          "x": 367,
-          "w": 35
-        },
-        "K": {
-          "x": 409,
-          "w": 35
-        },
-        "L": {
-          "x": 451,
-          "w": 27
-        },
-        "M": {
-          "x": 484,
-          "w": 44
-        },
-        "N": {
-          "x": 535,
-          "w": 35
-        },
-        "O": {
-          "x": 576,
-          "w": 35
-        },
-        "P": {
-          "x": 618,
-          "w": 35
-        },
-        "Q": {
-          "x": 660,
-          "w": 35
-        },
-        "R": {
-          "x": 702,
-          "w": 35
-        },
-        "S": {
-          "x": 743,
-          "w": 35
-        },
-        "T": {
-          "x": 785,
-          "w": 27
-        },
-        "U": {
-          "x": 819,
-          "w": 35
-        },
-        "V": {
-          "x": 860,
-          "w": 35
-        },
-        "W": {
-          "x": 902,
-          "w": 44
-        },
-        "X": {
-          "x": 952,
-          "w": 35
-        },
-        "Y": {
-          "x": 994,
-          "w": 35
-        },
-        "Z": {
-          "x": 1036,
-          "w": 27
-        }
+        "A": { "x": 25,   "w": 35 }, "B": { "x": 66,   "w": 36 },
+        "C": { "x": 108,  "w": 27 }, "D": { "x": 142,  "w": 35 },
+        "E": { "x": 183,  "w": 27 }, "F": { "x": 217,  "w": 27 },
+        "G": { "x": 250,  "w": 35 }, "H": { "x": 292,  "w": 35 },
+        "I": { "x": 334,  "w": 27 }, "J": { "x": 367,  "w": 35 },
+        "K": { "x": 409,  "w": 35 }, "L": { "x": 451,  "w": 27 },
+        "M": { "x": 484,  "w": 44 }, "N": { "x": 535,  "w": 35 },
+        "O": { "x": 576,  "w": 35 }, "P": { "x": 618,  "w": 35 },
+        "Q": { "x": 660,  "w": 35 }, "R": { "x": 702,  "w": 35 },
+        "S": { "x": 743,  "w": 35 }, "T": { "x": 785,  "w": 27 },
+        "U": { "x": 819,  "w": 35 }, "V": { "x": 860,  "w": 35 },
+        "W": { "x": 902,  "w": 44 }, "X": { "x": 952,  "w": 35 },
+        "Y": { "x": 994,  "w": 35 }, "Z": { "x": 1036, "w": 27 }
       }
     }
+
   }
 }
