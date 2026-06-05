@@ -1,0 +1,523 @@
+{
+  "source": "IMG_4879.jpeg",
+  "image_size": {
+    "w": 1108,
+    "h": 1648
+  },
+  "notes": "JPEG screenshot. Sprite content ~68px wide; gap ~7px between sprites; cell pitch ~75px. Bosses are exactly 2x characters per axis (4x area). Tiles are 67x67px.",
+  "sections": {
+    "characters": {
+      "note": "28 sprites total across 2 rows of 14 each",
+      "sprite_size": {
+        "w": 68,
+        "h": 68
+      },
+      "cell_pitch": {
+        "x": 75,
+        "y": 76
+      },
+      "rows": [
+        {
+          "row": 0,
+          "y": 97,
+          "count": 14,
+          "x_starts": [
+            25,
+            100,
+            175,
+            250,
+            326,
+            401,
+            476,
+            551,
+            626,
+            702,
+            777,
+            852,
+            927,
+            1003
+          ]
+        },
+        {
+          "row": 1,
+          "y": 173,
+          "count": 14,
+          "x_starts": [
+            24,
+            100,
+            174,
+            250,
+            325,
+            401,
+            476,
+            551,
+            626,
+            701,
+            776,
+            852,
+            927,
+            1003
+          ]
+        }
+      ]
+    },
+    "bosses": {
+      "note": "7 bosses in a single row; each is 2x character size (134px vs 68px per axis)",
+      "sprite_size": {
+        "w": 135,
+        "h": 134
+      },
+      "cell_pitch": {
+        "x": 142
+      },
+      "rows": [
+        {
+          "row": 0,
+          "y": 349,
+          "count": 7,
+          "x_starts": [
+            25,
+            166,
+            309,
+            451,
+            593,
+            735,
+            877
+          ]
+        }
+      ]
+    },
+    "environments": {
+      "note": "Two pre-assembled scene blocks, each 3 rows x N cols of 67x67px tiles",
+      "tile_size": {
+        "w": 67,
+        "h": 67
+      },
+      "blocks": [
+        {
+          "name": "left",
+          "x": 25,
+          "y": 582,
+          "w": 469,
+          "h": 201,
+          "cols": 7,
+          "rows": 3
+        },
+        {
+          "name": "right",
+          "x": 501,
+          "y": 582,
+          "w": 536,
+          "h": 201,
+          "cols": 8,
+          "rows": 3
+        }
+      ]
+    },
+    "items": {
+      "note": "16 items in a single row; NOT a uniform grid\u2014widths vary (35\u201369px)",
+      "row_y": 892,
+      "row_height": 75,
+      "sprites": [
+        {
+          "index": 0,
+          "x": 25,
+          "w": 52
+        },
+        {
+          "index": 1,
+          "x": 83,
+          "w": 60
+        },
+        {
+          "index": 2,
+          "x": 150,
+          "w": 68
+        },
+        {
+          "index": 3,
+          "x": 225,
+          "w": 68
+        },
+        {
+          "index": 4,
+          "x": 300,
+          "w": 61
+        },
+        {
+          "index": 5,
+          "x": 376,
+          "w": 35
+        },
+        {
+          "index": 6,
+          "x": 417,
+          "w": 52
+        },
+        {
+          "index": 7,
+          "x": 476,
+          "w": 52
+        },
+        {
+          "index": 8,
+          "x": 535,
+          "w": 51
+        },
+        {
+          "index": 9,
+          "x": 594,
+          "w": 67
+        },
+        {
+          "index": 10,
+          "x": 668,
+          "w": 52
+        },
+        {
+          "index": 11,
+          "x": 727,
+          "w": 52
+        },
+        {
+          "index": 12,
+          "x": 785,
+          "w": 69
+        },
+        {
+          "index": 13,
+          "x": 860,
+          "w": 61
+        },
+        {
+          "index": 14,
+          "x": 927,
+          "w": 69
+        },
+        {
+          "index": 15,
+          "x": 1002,
+          "w": 69
+        }
+      ]
+    },
+    "portraits": {
+      "note": "14 portraits, same 75px cell grid as characters. Used for battle UI (Pokemon-style).",
+      "sprite_size": {
+        "w": 68,
+        "h": 69
+      },
+      "cell_pitch": {
+        "x": 75
+      },
+      "rows": [
+        {
+          "row": 0,
+          "y": 1066,
+          "count": 14,
+          "x_starts": [
+            25,
+            100,
+            175,
+            250,
+            326,
+            401,
+            476,
+            551,
+            626,
+            702,
+            777,
+            852,
+            927,
+            1002
+          ]
+        }
+      ]
+    },
+    "interface": {
+      "note": "Health bar + 13 UI elements in one row",
+      "row_y": 1250,
+      "row_height": 52,
+      "sprites": [
+        {
+          "name": "health_bar",
+          "x": 25,
+          "w": 294
+        },
+        {
+          "index": 1,
+          "x": 325,
+          "w": 52
+        },
+        {
+          "index": 2,
+          "x": 384,
+          "w": 52
+        },
+        {
+          "index": 3,
+          "x": 440,
+          "w": 57
+        },
+        {
+          "index": 4,
+          "x": 501,
+          "w": 52
+        },
+        {
+          "index": 5,
+          "x": 560,
+          "w": 51
+        },
+        {
+          "index": 6,
+          "x": 618,
+          "w": 44
+        },
+        {
+          "index": 7,
+          "x": 668,
+          "w": 44
+        },
+        {
+          "index": 8,
+          "x": 718,
+          "w": 52
+        },
+        {
+          "index": 9,
+          "x": 777,
+          "w": 52
+        },
+        {
+          "index": 10,
+          "x": 835,
+          "w": 44
+        },
+        {
+          "index": 11,
+          "x": 885,
+          "w": 52
+        },
+        {
+          "index": 12,
+          "x": 944,
+          "w": 52
+        },
+        {
+          "index": 13,
+          "x": 1002,
+          "w": 52
+        }
+      ]
+    },
+    "effects": {
+      "note": "18 effect sprites in one row; variable widths (10\u201371px)",
+      "row_y": 1409,
+      "row_height": 68,
+      "sprites": [
+        {
+          "index": 0,
+          "x": 0,
+          "w": 53
+        },
+        {
+          "index": 1,
+          "x": 91,
+          "w": 69
+        },
+        {
+          "index": 2,
+          "x": 167,
+          "w": 26
+        },
+        {
+          "index": 3,
+          "x": 209,
+          "w": 26
+        },
+        {
+          "index": 4,
+          "x": 242,
+          "w": 60
+        },
+        {
+          "index": 5,
+          "x": 309,
+          "w": 10
+        },
+        {
+          "index": 6,
+          "x": 325,
+          "w": 36
+        },
+        {
+          "index": 7,
+          "x": 367,
+          "w": 10
+        },
+        {
+          "index": 8,
+          "x": 384,
+          "w": 69
+        },
+        {
+          "index": 9,
+          "x": 458,
+          "w": 71
+        },
+        {
+          "index": 10,
+          "x": 534,
+          "w": 69
+        },
+        {
+          "index": 11,
+          "x": 609,
+          "w": 71
+        },
+        {
+          "index": 12,
+          "x": 692,
+          "w": 63
+        },
+        {
+          "index": 13,
+          "x": 759,
+          "w": 71
+        },
+        {
+          "index": 14,
+          "x": 843,
+          "w": 28
+        },
+        {
+          "index": 15,
+          "x": 892,
+          "w": 45
+        },
+        {
+          "index": 16,
+          "x": 951,
+          "w": 46
+        },
+        {
+          "index": 17,
+          "x": 1009,
+          "w": 56
+        }
+      ]
+    },
+    "fonts": {
+      "note": "Proportional pixel font A\u2013Z. Three width classes: narrow=27px (C,E,F,I,L,T,Z), standard=35px, wide=44px (M,W). Height: 44px.",
+      "row_y": 1584,
+      "row_height": 44,
+      "glyphs": {
+        "A": {
+          "x": 25,
+          "w": 35
+        },
+        "B": {
+          "x": 66,
+          "w": 36
+        },
+        "C": {
+          "x": 108,
+          "w": 27
+        },
+        "D": {
+          "x": 142,
+          "w": 35
+        },
+        "E": {
+          "x": 183,
+          "w": 27
+        },
+        "F": {
+          "x": 217,
+          "w": 27
+        },
+        "G": {
+          "x": 250,
+          "w": 35
+        },
+        "H": {
+          "x": 292,
+          "w": 35
+        },
+        "I": {
+          "x": 334,
+          "w": 27
+        },
+        "J": {
+          "x": 367,
+          "w": 35
+        },
+        "K": {
+          "x": 409,
+          "w": 35
+        },
+        "L": {
+          "x": 451,
+          "w": 27
+        },
+        "M": {
+          "x": 484,
+          "w": 44
+        },
+        "N": {
+          "x": 535,
+          "w": 35
+        },
+        "O": {
+          "x": 576,
+          "w": 35
+        },
+        "P": {
+          "x": 618,
+          "w": 35
+        },
+        "Q": {
+          "x": 660,
+          "w": 35
+        },
+        "R": {
+          "x": 702,
+          "w": 35
+        },
+        "S": {
+          "x": 743,
+          "w": 35
+        },
+        "T": {
+          "x": 785,
+          "w": 27
+        },
+        "U": {
+          "x": 819,
+          "w": 35
+        },
+        "V": {
+          "x": 860,
+          "w": 35
+        },
+        "W": {
+          "x": 902,
+          "w": 44
+        },
+        "X": {
+          "x": 952,
+          "w": 35
+        },
+        "Y": {
+          "x": 994,
+          "w": 35
+        },
+        "Z": {
+          "x": 1036,
+          "w": 27
+        }
+      }
+    }
+  }
+}
